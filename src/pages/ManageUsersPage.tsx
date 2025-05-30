@@ -1315,7 +1315,7 @@ const ManageUsersPage: React.FC = () => {
 
       {/* Send Email Dialog */}
       <Dialog open={isSendEmailDialogOpen} onOpenChange={(isOpen) => { if (isBulkEmailSending && isOpen) return; setIsSendEmailDialogOpen(isOpen); if (!isOpen) { setEmailSubject(''); setEmailBody(''); setEmailSendingStatuses([]); setEmailImageFile(null); setEmailImageUrl(null); setIsUploadingImage(false); if(emailImageInputRef.current) emailImageInputRef.current.value = ""; } }}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-4xl overflow-y-auto max-h-[85vh]"> {/* Increased width and added scroll */}
           <DialogHeader>
             <DialogTitle>Compose and Send Email</DialogTitle>
             <DialogDescription>
