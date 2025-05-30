@@ -741,7 +741,14 @@ const ManageUsersPage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 md:p-6 lg:p-8 bg-[#fdf8f6] min-h-screen">
+      {/* New Main Heading */}
+      <div className="text-center py-6 md:py-8 bg-[#e8dcd9] rounded-lg shadow-md mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-[#6F360F] tracking-tight">
+          Aanandam Yoga Customer Management System
+        </h1>
+      </div>
+
       <input
         type="file"
         ref={fileInputRef}
