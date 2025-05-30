@@ -1210,17 +1210,7 @@ const ManageUsersPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <CardTitle className="text-lg font-medium text-gray-700">User List ({users.length})</CardTitle>
             <div className="flex space-x-2 flex-wrap gap-y-2">
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={handleInitiateSendMessage} 
-                disabled={selectedUserIds.size === 0}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <MessageSquarePlus className="mr-2 size-4" />
-                Send WhatsApp ({selectedUserIds.size})
-              </Button>
-              {/* Send Email Button */}
+              {/* Send Email Button - MOVED TO TOP */}
               <Button 
                 variant="default"
                 size="sm"
@@ -1238,6 +1228,16 @@ const ManageUsersPage: React.FC = () => {
               >
                 <Send className="mr-2 size-4" /> {/* Using Send icon for email */}
                 Send Email ({selectedUserIds.size > 0 ? users.filter(u => selectedUserIds.has(u.id) && u.email).length : 0})
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={handleInitiateSendMessage} 
+                disabled={selectedUserIds.size === 0}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <MessageSquarePlus className="mr-2 size-4" />
+                Send WhatsApp ({selectedUserIds.size})
               </Button>
             </div>
           </div>
@@ -1323,6 +1323,25 @@ const ManageUsersPage: React.FC = () => {
               Number of recipients: {emailSendingStatuses.length}
             </DialogDescription>
           </DialogHeader>
+
+          {/* Moved Buttons to Top for Small Screens */}
+          <div className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+            <Button 
+              type="button" 
+              onClick={handleSendBulkEmail}
+              disabled={!emailSubject.trim() || !emailBody.trim() || emailSendingStatuses.length === 0 || isBulkEmailSending || isUploadingImage}
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white min-w-[120px] mb-2 sm:mb-0"
+            >
+              {isBulkEmailSending ? <SpinnerIcon className="animate-spin mr-2 size-4" /> : <Send className="mr-2 size-4" /> } 
+              {isBulkEmailSending ? 'Sending...' : `Send to ${emailSendingStatuses.length}`}
+            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={isBulkEmailSending || isUploadingImage} className="w-full sm:w-auto">
+                Cancel
+              </Button>
+            </DialogClose>
+          </div>
+
           <div className="py-4 space-y-4">
             <div>
               <Label htmlFor="email-subject">Subject</Label>
@@ -1425,20 +1444,6 @@ const ManageUsersPage: React.FC = () => {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isBulkEmailSending || isUploadingImage}>Cancel</Button>
-            </DialogClose>
-            <Button 
-              type="button" 
-              onClick={handleSendBulkEmail}
-              disabled={!emailSubject.trim() || !emailBody.trim() || emailSendingStatuses.length === 0 || isBulkEmailSending || isUploadingImage}
-              className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
-            >
-              {isBulkEmailSending ? <SpinnerIcon className="animate-spin mr-2 size-4" /> : <Send className="mr-2 size-4" />} 
-              {isBulkEmailSending ? 'Sending...' : `Send to ${emailSendingStatuses.length}`}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
