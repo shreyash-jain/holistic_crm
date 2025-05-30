@@ -132,6 +132,10 @@ const ManageUsersPage: React.FC = () => {
   const emailBodyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [emailSendingStatuses, setEmailSendingStatuses] = useState<UserMessageStatus[]>([]);
   const [isBulkEmailSending, setIsBulkEmailSending] = useState(false);
+  const [emailImageFile, setEmailImageFile] = useState<File | null>(null); // State for the selected image file
+  const [emailImageUrl, setEmailImageUrl] = useState<string | null>(null); // State for the uploaded image URL
+  const [isUploadingImage, setIsUploadingImage] = useState(false); // State for image upload loading
+  const emailImageInputRef = useRef<HTMLInputElement>(null); // Ref for image input
 
   // State for Email Preview
   const [showEmailPreview, setShowEmailPreview] = useState(false);
@@ -168,6 +172,19 @@ const ManageUsersPage: React.FC = () => {
             text-align: center;
             border-top-left-radius: 16px;
             border-top-right-radius: 16px;
+        }
+        /* Style for the image container */
+        .image-content {
+            text-align: center; /* Center the image */
+            padding: 20px 24px 0; /* Add some padding around the image, none at bottom if content follows immediately*/
+            background-color: #ffffff; /* Match email container background */
+        }
+        .image-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px; /* Optional: if you want rounded corners for the image */
+            display: block; /* Remove extra space below image */
+            margin: 0 auto; /* Ensure centering if parent text-align is not enough */
         }
         .content {
             padding: 32px 24px;
@@ -208,6 +225,7 @@ const ManageUsersPage: React.FC = () => {
         <div class="header">
              <h1 style="font-size: 24px; color: #6F360F; margin:0;">Aanandham Yoga</h1>
         </div>
+        {{EMAIL_IMAGE_CONTENT}}
         <div class="content">
             {{EMAIL_BODY_CONTENT}}
         </div>
@@ -233,6 +251,79 @@ const ManageUsersPage: React.FC = () => {
 
   const handleCustomFieldChange = (fieldName: keyof typeof customFields, value: string) => {
     setCustomFields(prev => ({ ...prev, [fieldName]: value }));
+  };
+
+  const uploadEmailImage = async (file: File) => {
+    setIsUploadingImage(true);
+    setEmailImageUrl(null); // Clear previous URL
+    toast.info("Uploading image...", { id: 'image-upload' });
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('https://backend-stage.vacademy.io/media-service/public/upload-file', {
+        method: 'PUT',
+        body: formData,
+        // Content-Type header is automatically set by the browser when using FormData
+      });
+
+      if (response.ok) {
+        // API returns the URL as a plain text string
+        const imageUrl = await response.text();
+
+        if (imageUrl && imageUrl.startsWith('http')) {
+          setEmailImageUrl(imageUrl);
+          toast.success("Image uploaded successfully!", { id: 'image-upload' });
+        } else {
+          console.error("API response for image upload was not a valid URL string:", imageUrl);
+          toast.error("Failed to get a valid image URL from server.", { id: 'image-upload' });
+          setEmailImageFile(null); // Clear the file if upload failed to produce URL
+          if(emailImageInputRef.current) emailImageInputRef.current.value = "";
+        }
+      } else {
+        const errorData = await response.text().catch(() => "Server returned an error");
+        console.error("Image upload API error:", response.status, errorData);
+        toast.error(`Image upload failed: ${response.statusText || errorData}`, { id: 'image-upload' });
+        setEmailImageFile(null); // Clear the file
+        if(emailImageInputRef.current) emailImageInputRef.current.value = "";
+      }
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      toast.error(`Error uploading image: ${error.message}`, { id: 'image-upload' });
+      setEmailImageFile(null); // Clear the file
+      if(emailImageInputRef.current) emailImageInputRef.current.value = "";
+    }
+    setIsUploadingImage(false);
+  };
+
+  const handleEmailImageFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error("Image size should not exceed 5MB.");
+        if (emailImageInputRef.current) {
+          emailImageInputRef.current.value = ""; // Reset file input
+        }
+        setEmailImageFile(null);
+        setEmailImageUrl(null);
+        return;
+      }
+      setEmailImageFile(file);
+      uploadEmailImage(file); // Automatically upload when file is selected
+    } else {
+      setEmailImageFile(null);
+      setEmailImageUrl(null);
+    }
+  };
+
+  const removeEmailImage = () => {
+    setEmailImageFile(null);
+    setEmailImageUrl(null);
+    if (emailImageInputRef.current) {
+      emailImageInputRef.current.value = ""; // Reset file input
+    }
+    toast.info("Image removed from email.");
   };
 
   const insertPlaceholder = (placeholder: string) => {
@@ -590,13 +681,21 @@ const ManageUsersPage: React.FC = () => {
   };
 
   const generateEmailPreviewHtml = () => {
-    if (!emailBody.trim()) {
-      // If body is empty, show a simple message within the template
-      const emptyBodyMessage = '<p class="text-gray-500 italic">Email body is empty. Start typing to see a preview.</p>';
-      setEmailPreviewHtml(baseEmailHtmlTemplate.replace('{{EMAIL_BODY_CONTENT}}', emptyBodyMessage));
+    const imageHtml = emailImageUrl
+      ? `<div class="image-content"><img src="${emailImageUrl}" alt="Email Image" /></div>`
+      : '';
+
+    if (!emailBody.trim() && !emailImageUrl) {
+      // If body and image are empty, show a simple message within the template
+      const emptyBodyMessage = '<p class="text-gray-500 italic">Email body is empty. Start typing or add an image to see a preview.</p>';
+      setEmailPreviewHtml(
+        baseEmailHtmlTemplate
+          .replace('{{EMAIL_IMAGE_CONTENT}}', '') // No image
+          .replace('{{EMAIL_BODY_CONTENT}}', emptyBodyMessage)
+      );
       return;
     }
-
+    
     let populatedBodyContent = emailBody;
     const firstRecipientStatus = emailSendingStatuses.find(status => users.find(u => u.id === status.userId && u.email));
     const sampleUser = firstRecipientStatus ? users.find(u => u.id === firstRecipientStatus.userId) : null;
@@ -623,14 +722,26 @@ const ManageUsersPage: React.FC = () => {
     const isFullHtmlDoc = isLikelyHtml && /<html\b[^>]*>/i.test(populatedBodyContent) && /<body\b[^>]*>/i.test(populatedBodyContent);
 
     if (isFullHtmlDoc) {
-      setEmailPreviewHtml(populatedBodyContent); // Use user's full HTML
+      // If user provides full HTML, we assume they handle image placement if they want it.
+      // For simplicity, we won't inject our image into user's full HTML doc here.
+      // Or, we could decide to always inject our image before their <body> if image exists.
+      // Current approach: if full HTML, let user manage it.
+      setEmailPreviewHtml(populatedBodyContent);
     } else if (isLikelyHtml) {
-      // User provided an HTML snippet, embed it in our template
-      setEmailPreviewHtml(baseEmailHtmlTemplate.replace('{{EMAIL_BODY_CONTENT}}', populatedBodyContent));
+      // User provided an HTML snippet, embed it in our template, along with the image
+      setEmailPreviewHtml(
+        baseEmailHtmlTemplate
+          .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtml)
+          .replace('{{EMAIL_BODY_CONTENT}}', populatedBodyContent)
+      );
     } else {
-      // Plain text: convert newlines to <br> and embed in our template
+      // Plain text: convert newlines to <br> and embed in our template, along with the image
       const plainTextAsHtml = populatedBodyContent.replace(/\n/g, '<br />');
-      setEmailPreviewHtml(baseEmailHtmlTemplate.replace('{{EMAIL_BODY_CONTENT}}', plainTextAsHtml));
+      setEmailPreviewHtml(
+        baseEmailHtmlTemplate
+          .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtml)
+          .replace('{{EMAIL_BODY_CONTENT}}', plainTextAsHtml)
+      );
     }
   };
 
@@ -689,14 +800,53 @@ const ManageUsersPage: React.FC = () => {
                                          /<html\b[^>]*>/i.test(emailBody) && 
                                          /<body\b[^>]*>/i.test(emailBody);
 
+    const imageHtmlForSending = emailImageUrl 
+      ? `<div style="text-align: center; padding: 20px 0;"><img src="${emailImageUrl}" alt="Email Image" style="max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto;" /></div>`
+      : '';
+
     if (!originalUserInputIsLikelyHtml) { // If plain text
         const plainTextWithPlaceholdersAsHtml = emailBody.replace(/\n/g, '<br />');
-        finalApiBody = baseEmailHtmlTemplate.replace('{{EMAIL_BODY_CONTENT}}', plainTextWithPlaceholdersAsHtml);
+        finalApiBody = baseEmailHtmlTemplate
+            .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending)
+            .replace('{{EMAIL_BODY_CONTENT}}', plainTextWithPlaceholdersAsHtml);
     } else if (originalUserInputIsLikelyHtml && !originalUserInputIsFullHtmlDoc) { // HTML snippet
-        // Wrap snippet in the base template to ensure consistent structure for the backend
-        finalApiBody = baseEmailHtmlTemplate.replace('{{EMAIL_BODY_CONTENT}}', emailBody);
+        finalApiBody = baseEmailHtmlTemplate
+            .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending)
+            .replace('{{EMAIL_BODY_CONTENT}}', emailBody);
+    } else if (originalUserInputIsFullHtmlDoc) {
+        // If user provided full HTML, attempt to inject image after <body> or header if possible,
+        // or prepend. For now, let's prepend before their <html> tag if they provided a full document.
+        // This is tricky. A robust solution would parse HTML.
+        // Simpler: if they give full HTML, we will *not* inject the image via {{EMAIL_IMAGE_CONTENT}}
+        // because their HTML structure is unknown. The image will only be part of *our* template.
+        // To ensure the image is included, we must use our template.
+        // So, if an image is present, we will always use our template structure.
+        // This overrides their full HTML structure if an image is selected.
+        if (emailImageUrl) {
+             // A safer bet is to find the closing tag of a common header or opening of body
+             // For now, if they give full HTML, we will *not* inject the image via {{EMAIL_IMAGE_CONTENT}}
+             // because their HTML structure is unknown. The image will only be part of *our* template.
+             // To ensure the image is included, we must use our template.
+             // So, if an image is present, we will always use our template structure.
+             // This overrides their full HTML structure if an image is selected.
+            if (finalApiBody.includes('{{EMAIL_IMAGE_CONTENT}}')) { // If their HTML somehow included our placeholder
+                 finalApiBody = finalApiBody.replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending);
+            } else {
+                // Fallback: if they provide full HTML and we have an image, we need to decide strategy.
+                // Option A: Don't inject image.
+                // Option B: Try to intelligently inject (hard).
+                // Option C: Wrap their content (might break their styling).
+                // Let's go with: if an image is selected, always use the base template structure.
+                // This overrides their full HTML structure if an image is selected.
+                 finalApiBody = baseEmailHtmlTemplate
+                    .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending)
+                    .replace('{{EMAIL_BODY_CONTENT}}', emailBody); // Assuming emailBody is their full HTML here
+            }
+        }
+        // If no image, their full HTML is used as is.
     }
     // If originalUserInputIsFullHtmlDoc, finalApiBody remains as emailBody (user's full HTML with placeholders)
+    // ENSURE PLACEHOLDERS in finalApiBody are still replaced later by backend
 
     const requestBody = {
       body: finalApiBody, // Use the potentially wrapped body with {{placeholders}} intact
@@ -1159,7 +1309,7 @@ const ManageUsersPage: React.FC = () => {
       </Card>
 
       {/* Send Email Dialog */}
-      <Dialog open={isSendEmailDialogOpen} onOpenChange={(isOpen) => { if (isBulkEmailSending && isOpen) return; setIsSendEmailDialogOpen(isOpen); if (!isOpen) { setEmailSubject(''); setEmailBody(''); setEmailSendingStatuses([]); } }}>
+      <Dialog open={isSendEmailDialogOpen} onOpenChange={(isOpen) => { if (isBulkEmailSending && isOpen) return; setIsSendEmailDialogOpen(isOpen); if (!isOpen) { setEmailSubject(''); setEmailBody(''); setEmailSendingStatuses([]); setEmailImageFile(null); setEmailImageUrl(null); setIsUploadingImage(false); if(emailImageInputRef.current) emailImageInputRef.current.value = ""; } }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Compose and Send Email</DialogTitle>
@@ -1181,10 +1331,40 @@ const ManageUsersPage: React.FC = () => {
               />
             </div>
             <div>
+              <Label htmlFor="email-image">Optional Image (Max 5MB)</Label>
+              <Input 
+                id="email-image"
+                ref={emailImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleEmailImageFileSelect}
+                className="mt-1"
+                disabled={isBulkEmailSending || showEmailPreview || isUploadingImage}
+              />
+              {isUploadingImage && <div className="mt-2 text-sm text-blue-600 flex items-center"><SpinnerIcon className="animate-spin mr-2 size-4" /> Uploading...</div>}
+              {emailImageUrl && !showEmailPreview && !isUploadingImage && (
+                <div className="mt-2">
+                    <img src={emailImageUrl} alt="Preview" className="max-w-xs max-h-32 border rounded mb-2" />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={removeEmailImage} 
+                      className="text-xs"
+                      disabled={isBulkEmailSending || isUploadingImage}
+                    >
+                      Remove Image
+                    </Button>
+                </div>
+              )}
+              {!emailImageFile && !emailImageUrl && !isUploadingImage && (
+                 <p className="mt-1 text-xs text-gray-500">Select an image to upload (max 5MB).</p>
+              )}
+            </div>
+            <div>
               <Label htmlFor="email-body">Body</Label>
               <div className="mt-1 mb-2 flex flex-wrap gap-2 items-center">
                 {placeholderList.map(p => (
-                  <Button key={p.value} variant="outline" size="sm" onClick={() => insertPlaceholder(p.value)} disabled={isBulkEmailSending || showEmailPreview} className="text-xs px-2 py-1 h-auto">
+                  <Button key={p.value} variant="outline" size="sm" onClick={() => insertPlaceholder(p.value)} disabled={isBulkEmailSending || showEmailPreview || isUploadingImage} className="text-xs px-2 py-1 h-auto">
                     Insert {p.label}
                   </Button>
                 ))}
@@ -1195,11 +1375,12 @@ const ManageUsersPage: React.FC = () => {
                         if (showEmailPreview) {
                             setShowEmailPreview(false);
                         } else {
+                            // Ensure image URL is available before showing preview with image
                             generateEmailPreviewHtml();
                             setShowEmailPreview(true);
                         }
                     }}
-                    disabled={isBulkEmailSending}
+                    disabled={isBulkEmailSending || isUploadingImage}
                     className="text-xs px-2 py-1 h-auto ml-auto"
                 >
                     {showEmailPreview ? 'Hide Preview' : 'Show Preview'}
@@ -1214,7 +1395,7 @@ const ManageUsersPage: React.FC = () => {
                   placeholder="Type your email message here...\nUse placeholders like {{name}} or {{join_link}}."
                   className="mt-1 min-h-[200px] max-h-[400px] overflow-y-auto"
                   rows={10}
-                  disabled={isBulkEmailSending}
+                  disabled={isBulkEmailSending || isUploadingImage}
                 />
               ) : (
                 <div 
@@ -1241,12 +1422,12 @@ const ManageUsersPage: React.FC = () => {
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isBulkEmailSending}>Cancel</Button>
+              <Button type="button" variant="outline" disabled={isBulkEmailSending || isUploadingImage}>Cancel</Button>
             </DialogClose>
             <Button 
               type="button" 
               onClick={handleSendBulkEmail}
-              disabled={!emailSubject.trim() || !emailBody.trim() || emailSendingStatuses.length === 0 || isBulkEmailSending}
+              disabled={!emailSubject.trim() || !emailBody.trim() || emailSendingStatuses.length === 0 || isBulkEmailSending || isUploadingImage}
               className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
             >
               {isBulkEmailSending ? <SpinnerIcon className="animate-spin mr-2 size-4" /> : <Send className="mr-2 size-4" />} 
