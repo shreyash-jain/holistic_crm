@@ -685,7 +685,9 @@ const ManageUsersPage: React.FC = () => {
       ? `<div class="image-content"><img src="${emailImageUrl}" alt="Email Image" /></div>`
       : '';
 
-    if (!emailBody.trim() && !emailImageUrl) {
+    const trimmedEmailBody = emailBody.trim();
+
+    if (!trimmedEmailBody && !emailImageUrl) {
       // If body and image are empty, show a simple message within the template
       const emptyBodyMessage = '<p class="text-gray-500 italic">Email body is empty. Start typing or add an image to see a preview.</p>';
       setEmailPreviewHtml(
@@ -696,7 +698,7 @@ const ManageUsersPage: React.FC = () => {
       return;
     }
     
-    let populatedBodyContent = emailBody;
+    let populatedBodyContent = trimmedEmailBody;
     const firstRecipientStatus = emailSendingStatuses.find(status => users.find(u => u.id === status.userId && u.email));
     const sampleUser = firstRecipientStatus ? users.find(u => u.id === firstRecipientStatus.userId) : null;
 
@@ -717,7 +719,7 @@ const ManageUsersPage: React.FC = () => {
     }
 
     // Heuristic to check if user input is already HTML
-    const isLikelyHtml = populatedBodyContent.trim().startsWith('<') && populatedBodyContent.includes('</');
+    const isLikelyHtml = populatedBodyContent.startsWith('<') && populatedBodyContent.includes('</');
     // Heuristic to check if user input is a full HTML document
     const isFullHtmlDoc = isLikelyHtml && /<html\b[^>]*>/i.test(populatedBodyContent) && /<body\b[^>]*>/i.test(populatedBodyContent);
 
@@ -746,7 +748,10 @@ const ManageUsersPage: React.FC = () => {
   };
 
   const handleSendBulkEmail = async () => {
-    if (!emailSubject.trim() || !emailBody.trim()) {
+    const trimmedEmailSubject = emailSubject.trim();
+    const trimmedEmailBody = emailBody.trim();
+
+    if (!trimmedEmailSubject || !trimmedEmailBody) {
       toast.error("Subject and body are required.");
       return;
     }
@@ -794,25 +799,25 @@ const ManageUsersPage: React.FC = () => {
     }
 
     // Determine the final API body based on whether emailBody is plain text or HTML
-    let finalApiBody = emailBody; // This is the user's input with {{placeholders}}
-    const originalUserInputIsLikelyHtml = emailBody.trim().startsWith('<') && emailBody.includes('</');
+    let finalApiBody = trimmedEmailBody; // Use the trimmed body
+    const originalUserInputIsLikelyHtml = trimmedEmailBody.startsWith('<') && trimmedEmailBody.includes('</');
     const originalUserInputIsFullHtmlDoc = originalUserInputIsLikelyHtml && 
-                                         /<html\b[^>]*>/i.test(emailBody) && 
-                                         /<body\b[^>]*>/i.test(emailBody);
+                                         /<html\b[^>]*>/i.test(trimmedEmailBody) && 
+                                         /<body\b[^>]*>/i.test(trimmedEmailBody);
 
     const imageHtmlForSending = emailImageUrl 
       ? `<div style="text-align: center; padding: 20px 0;"><img src="${emailImageUrl}" alt="Email Image" style="max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto;" /></div>`
       : '';
 
     if (!originalUserInputIsLikelyHtml) { // If plain text
-        const plainTextWithPlaceholdersAsHtml = emailBody.replace(/\n/g, '<br />');
+        const plainTextWithPlaceholdersAsHtml = trimmedEmailBody.replace(/\n/g, '<br />');
         finalApiBody = baseEmailHtmlTemplate
             .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending)
             .replace('{{EMAIL_BODY_CONTENT}}', plainTextWithPlaceholdersAsHtml);
     } else if (originalUserInputIsLikelyHtml && !originalUserInputIsFullHtmlDoc) { // HTML snippet
         finalApiBody = baseEmailHtmlTemplate
             .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending)
-            .replace('{{EMAIL_BODY_CONTENT}}', emailBody);
+            .replace('{{EMAIL_BODY_CONTENT}}', trimmedEmailBody);
     } else if (originalUserInputIsFullHtmlDoc) {
         // If user provided full HTML, attempt to inject image after <body> or header if possible,
         // or prepend. For now, let's prepend before their <html> tag if they provided a full document.
@@ -840,7 +845,7 @@ const ManageUsersPage: React.FC = () => {
                 // This overrides their full HTML structure if an image is selected.
                  finalApiBody = baseEmailHtmlTemplate
                     .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending)
-                    .replace('{{EMAIL_BODY_CONTENT}}', emailBody); // Assuming emailBody is their full HTML here
+                    .replace('{{EMAIL_BODY_CONTENT}}', trimmedEmailBody); // Use trimmed body here
             }
         }
         // If no image, their full HTML is used as is.
@@ -851,7 +856,7 @@ const ManageUsersPage: React.FC = () => {
     const requestBody = {
       body: finalApiBody, // Use the potentially wrapped body with {{placeholders}} intact
       notification_type: "EMAIL",
-      subject: emailSubject,
+      subject: trimmedEmailSubject,
       source: "USER_MANAGEMENT_BULK_EMAIL",
       source_id: uuidv4(),
       users: apiUsersPayload,
