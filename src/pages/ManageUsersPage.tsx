@@ -45,7 +45,6 @@ import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // Import AlertDialog components
 import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 import { emailTemplatesList } from '@/lib/emailTemplates'; // Import email templates
-import type { EmailTemplate } from '@/lib/emailTemplates'; // Import EmailTemplate type
 
 // Define a type for our user data
 interface User {
