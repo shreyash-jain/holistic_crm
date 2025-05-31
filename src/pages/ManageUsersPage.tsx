@@ -44,6 +44,8 @@ import type { ParseResult, ParseError } from 'papaparse'; // Import types separa
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // Import AlertDialog components
 import { Textarea } from "@/components/ui/textarea"; // Import Textarea
+import { emailTemplatesList } from '@/lib/emailTemplates'; // Import email templates
+import type { EmailTemplate } from '@/lib/emailTemplates'; // Import EmailTemplate type
 
 // Define a type for our user data
 interface User {
@@ -78,12 +80,7 @@ interface UserMessageStatus {
 }
 
 const ManageUsersPage: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([
-    { id: '1', name: 'Alice Wonderland', whatsappNumber: '11234567890' },
-    { id: '2', name: 'Bob The Builder', whatsappNumber: '19876543210' },
-    { id: '3', name: 'Charlie Chaplin', whatsappNumber: '15551234567' },
-    { id: '4', name: 'Diana Prince', whatsappNumber: '15559876543' },
-  ]);
+  const [users, setUsers] = useState<User[]>([]); // Initial user data removed
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
   // State for Add User Dialog
@@ -136,6 +133,7 @@ const ManageUsersPage: React.FC = () => {
   const [emailImageUrl, setEmailImageUrl] = useState<string | null>(null); // State for the uploaded image URL
   const [isUploadingImage, setIsUploadingImage] = useState(false); // State for image upload loading
   const emailImageInputRef = useRef<HTMLInputElement>(null); // Ref for image input
+  const [selectedEmailTemplateId, setSelectedEmailTemplateId] = useState<string | undefined>(undefined);
 
   // State for Email Preview
   const [showEmailPreview, setShowEmailPreview] = useState(false);
@@ -895,6 +893,39 @@ const ManageUsersPage: React.FC = () => {
     setIsBulkEmailSending(false);
   };
 
+  const handleSelectEmailTemplate = (templateId: string) => {
+    const template = emailTemplatesList.find(t => t.id === templateId);
+    if (template) {
+      setSelectedEmailTemplateId(template.id);
+      setEmailSubject(template.subject);
+      setEmailBody(template.content);
+      // Reset image when a new template is loaded, as template might have its own or user may want a fresh one
+      setEmailImageFile(null);
+      setEmailImageUrl(null);
+      if (emailImageInputRef.current) {
+        emailImageInputRef.current.value = "";
+      }
+      toast.info(`Template "${template.name}" loaded.`);
+    } else {
+      setSelectedEmailTemplateId(undefined);
+      // Optionally clear subject/body or leave as is if template not found
+      // setEmailSubject("");
+      // setEmailBody("");
+    }
+  };
+
+  const handleClearEmailTemplate = () => {
+    setSelectedEmailTemplateId(undefined);
+    setEmailSubject("");
+    setEmailBody("");
+    setEmailImageFile(null);
+    setEmailImageUrl(null);
+    if (emailImageInputRef.current) {
+      emailImageInputRef.current.value = "";
+    }
+    toast.info("Template cleared. Subject, body, and image have been reset.");
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-8 bg-[#fdf8f6] min-h-screen">
       {/* New Main Heading */}
@@ -1314,7 +1345,20 @@ const ManageUsersPage: React.FC = () => {
       </Card>
 
       {/* Send Email Dialog */}
-      <Dialog open={isSendEmailDialogOpen} onOpenChange={(isOpen) => { if (isBulkEmailSending && isOpen) return; setIsSendEmailDialogOpen(isOpen); if (!isOpen) { setEmailSubject(''); setEmailBody(''); setEmailSendingStatuses([]); setEmailImageFile(null); setEmailImageUrl(null); setIsUploadingImage(false); if(emailImageInputRef.current) emailImageInputRef.current.value = ""; } }}>
+      <Dialog open={isSendEmailDialogOpen} onOpenChange={(isOpen) => { 
+          if (isBulkEmailSending && isOpen) return; 
+          setIsSendEmailDialogOpen(isOpen); 
+          if (!isOpen) { 
+            setEmailSubject(''); 
+            setEmailBody(''); 
+            setEmailSendingStatuses([]); 
+            setEmailImageFile(null); 
+            setEmailImageUrl(null); 
+            setIsUploadingImage(false); 
+            setSelectedEmailTemplateId(undefined); // Reset selected template
+            if(emailImageInputRef.current) emailImageInputRef.current.value = ""; 
+          } 
+      }}>
         <DialogContent className="sm:max-w-4xl overflow-y-auto max-h-[85vh]"> {/* Increased width and added scroll */}
           <DialogHeader>
             <DialogTitle>Compose and Send Email</DialogTitle>
@@ -1387,6 +1431,31 @@ const ManageUsersPage: React.FC = () => {
             <div>
               <Label htmlFor="email-body">Body</Label>
               <div className="mt-1 mb-2 flex flex-wrap gap-2 items-center">
+                {/* Email Template Select - MOVED HERE and styled for compactness */}
+                <Select 
+                  value={selectedEmailTemplateId}
+                  onValueChange={(value) => { 
+                    if (value === "__clear__") {
+                      handleClearEmailTemplate();
+                    } else if (value) { // A specific template ID is selected
+                      handleSelectEmailTemplate(value);
+                    } else { // Value is falsy (e.g., placeholder selected, or component reset)
+                      handleClearEmailTemplate(); // Treat as a clear action
+                    }
+                  }}
+                  disabled={isBulkEmailSending || isUploadingImage}
+                >
+                  <SelectTrigger id="email-template-select" className="min-w-[220px]"> {/* Adjusted class */}
+                    <SelectValue placeholder="Load a template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__clear__">Clear Loaded Template</SelectItem>
+                    {emailTemplatesList.map(template => (
+                      <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 {placeholderList.map(p => (
                   <Button key={p.value} variant="outline" size="sm" onClick={() => insertPlaceholder(p.value)} disabled={isBulkEmailSending || showEmailPreview || isUploadingImage} className="text-xs px-2 py-1 h-auto">
                     Insert {p.label}
