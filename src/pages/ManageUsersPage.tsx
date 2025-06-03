@@ -749,8 +749,14 @@ const ManageUsersPage: React.FC = () => {
           .replace('{{EMAIL_BODY_CONTENT}}', populatedBodyContent)
       );
     } else {
-      // Plain text: convert newlines to <br> and embed in our template, along with the image
-      const plainTextAsHtml = populatedBodyContent.replace(/\n/g, '<br />');
+      // Plain text: convert newlines to <br>, detect URLs and wrap them in buttons
+      let plainTextAsHtml = populatedBodyContent.replace(/\n/g, '<br />');
+      const urlRegex = /(https?:\/\/[^\s<>"&]+|www\.[^\s<>"&]+)/g; // Added & to excluded characters
+      plainTextAsHtml = plainTextAsHtml.replace(urlRegex, (url) => {
+        const processedUrl = url.startsWith('www.') ? `http://${url}` : url;
+        // Using a subset of .button styles inline for preview, actual send uses more complete inline styles
+        return `<a href="${processedUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #8B4513; color: #ffffff; padding: 10px 15px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 5px 0;">Open Link</a>`;
+      });
       setEmailPreviewHtml(
         baseEmailHtmlTemplate
           .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtml)
@@ -825,7 +831,13 @@ const ManageUsersPage: React.FC = () => {
       : '';
 
     if (!originalUserInputIsLikelyHtml) { // If plain text
-        const plainTextWithPlaceholdersAsHtml = trimmedEmailBody.replace(/\n/g, '<br />');
+        let plainTextWithPlaceholdersAsHtml = trimmedEmailBody.replace(/\n/g, '<br />');
+        const urlRegex = /(https?:\/\/[^\s<>"&]+|www\.[^\s<>"&]+)/g; // Added & to excluded characters
+        plainTextWithPlaceholdersAsHtml = plainTextWithPlaceholdersAsHtml.replace(urlRegex, (url) => {
+            const processedUrl = url.startsWith('www.') ? `http://${url}` : url;
+            // Using inline styles for robustness in email clients
+            return `<a href="${processedUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #8B4513; color: #ffffff; padding: 10px 15px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 5px 0;">Open Link</a>`;
+        });
         finalApiBody = baseEmailHtmlTemplate
             .replace('{{EMAIL_IMAGE_CONTENT}}', imageHtmlForSending)
             .replace('{{EMAIL_BODY_CONTENT}}', plainTextWithPlaceholdersAsHtml);
