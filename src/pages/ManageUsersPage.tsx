@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MoreHorizontal, Trash2, Edit3, MessageSquarePlus, UserPlus, Upload, Send, Loader2 as SpinnerIcon } from 'lucide-react'; // Added Send, SpinnerIcon
+import { MoreHorizontal, Trash2, Edit3, MessageSquarePlus, UserPlus, Upload, Send, Loader2 as SpinnerIcon, Settings } from 'lucide-react'; // Added Settings icon
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -112,6 +112,9 @@ const ManageUsersPage: React.FC = () => {
   // State for CSV import error details
   const [csvImportErrorDetails, setCsvImportErrorDetails] = useState<string[]>([]);
 
+  // State for managing the custom fields dialog
+  const [isCustomFieldsDialogOpen, setIsCustomFieldsDialogOpen] = useState(false);
+
   // State for custom template fields
   const [customFields, setCustomFields] = useState({
     join_link: '',
@@ -140,6 +143,9 @@ const ManageUsersPage: React.FC = () => {
   // State for Email Preview
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [emailPreviewHtml, setEmailPreviewHtml] = useState('');
+
+  // State for user list search/filter
+  const [searchTerm, setSearchTerm] = useState('');
 
   const baseEmailHtmlTemplate = `
 <!DOCTYPE html>
@@ -939,9 +945,9 @@ const ManageUsersPage: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 bg-[#fdf8f6] min-h-screen">
-      {/* New Main Heading */}
-      <div className="text-center py-6 md:py-8 bg-[#e8dcd9] rounded-lg shadow-md mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-[#6F360F] tracking-tight">
+      {/* New Main Heading - Reduced Size */}
+      <div className="text-center py-4 md:py-6 bg-[#e8dcd9] rounded-lg shadow-md mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#6F360F] tracking-tight">
           Aanandam Yoga Customer Management System
         </h1>
       </div>
@@ -1055,10 +1061,123 @@ const ManageUsersPage: React.FC = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {/* Button to open Custom Fields Dialog */}
+          <Dialog open={isCustomFieldsDialogOpen} onOpenChange={setIsCustomFieldsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="bg-white">
+                <Settings className="mr-2 size-4" />
+                Set Message Variables
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl"> {/* Increased width for custom fields */}
+              <DialogHeader>
+                <DialogTitle>Custom Message Variables</DialogTitle>
+                <DialogDescription>
+                  Define values for placeholders that can be used in your email and WhatsApp message templates.
+                </DialogDescription>
+              </DialogHeader>
+              {/* Moved Custom Template Fields Section into Dialog */}
+              <div className="py-4 max-h-[70vh] overflow-y-auto pr-2"> {/* Added scroll for content */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  <div>
+                    <Label htmlFor="join_link" className="text-sm font-medium text-gray-700">Join Link (URL)</Label>
+                    <Input 
+                      id="join_link" 
+                      value={customFields.join_link} 
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCustomFieldChange('join_link', e.target.value)} 
+                      placeholder="https://example.com/meeting" 
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="daily_habit_heading" className="text-sm font-medium text-gray-700">Daily Habit Heading</Label>
+                    <Input 
+                      id="daily_habit_heading" 
+                      value={customFields.daily_habit_heading} 
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCustomFieldChange('daily_habit_heading', e.target.value)} 
+                      placeholder="e.g., Your Habit for Today"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="daily_habit_sub_heading" className="text-sm font-medium text-gray-700">Daily Habit Sub-Heading</Label>
+                    <Input 
+                      id="daily_habit_sub_heading" 
+                      value={customFields.daily_habit_sub_heading} 
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCustomFieldChange('daily_habit_sub_heading', e.target.value)} 
+                      placeholder="e.g., Focus on this simple task"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="daily_habit_text" className="text-sm font-medium text-gray-700">Daily Habit Text</Label>
+                    <Textarea 
+                      id="daily_habit_text" 
+                      value={customFields.daily_habit_text} 
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('daily_habit_text', e.target.value)} 
+                      placeholder="Describe the daily habit..."
+                      className="mt-1"
+                      rows={4} 
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="morning_quote" className="text-sm font-medium text-gray-700">Morning Quote</Label>
+                    <Textarea 
+                      id="morning_quote" 
+                      value={customFields.morning_quote} 
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('morning_quote', e.target.value)} 
+                      placeholder="Enter your morning quote here..."
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="day_number" className="text-sm font-medium text-gray-700">Day Number</Label>
+                    <Input 
+                      id="day_number" 
+                      value={customFields.day_number} 
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCustomFieldChange('day_number', e.target.value)} 
+                      placeholder="e.g., 1, 2, Three"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="what_next" className="text-sm font-medium text-gray-700">What's Next (Text)</Label>
+                    <Textarea 
+                      id="what_next" 
+                      value={customFields.what_next} 
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('what_next', e.target.value)} 
+                      placeholder="Describe what users should expect next..."
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                  {/* New Custom Field for Custom Message Text */}
+                  <div className="md:col-span-2">
+                    <Label htmlFor="custom_message_text" className="text-sm font-medium text-gray-700">Custom Message Text (for custom_message_text)</Label>
+                    <Textarea 
+                      id="custom_message_text" 
+                      value={customFields.custom_message_text} 
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('custom_message_text', e.target.value)} 
+                      placeholder="Enter your custom message for the template..."
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">Close</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
-      {/* Custom Template Fields Section */}
+      {/* Custom Template Fields Section - THIS WILL BE REMOVED */}
+      {/* 
       <Card className="mb-6 shadow-md">
         <CardHeader>
           <CardTitle className="text-lg font-medium text-gray-700">Custom Message Variables</CardTitle>
@@ -1116,10 +1235,10 @@ const ManageUsersPage: React.FC = () => {
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('morning_quote', e.target.value)} 
               placeholder="Enter your morning quote here..."
               className="mt-1"
-              rows={4}
+              rows={3}
             />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <Label htmlFor="day_number" className="text-sm font-medium text-gray-700">Day Number</Label>
             <Input 
               id="day_number" 
@@ -1140,6 +1259,7 @@ const ManageUsersPage: React.FC = () => {
               rows={3}
             />
           </div>
+          
           <div className="md:col-span-2">
             <Label htmlFor="custom_message_text" className="text-sm font-medium text-gray-700">Custom Message Text (for custom_message_text)</Label>
             <Textarea 
@@ -1153,6 +1273,7 @@ const ManageUsersPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      */}
 
       {csvProcessingError && (
         <div className="mb-4 p-3 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm">
@@ -1315,6 +1436,16 @@ const ManageUsersPage: React.FC = () => {
               </Button>
             </div>
           </div>
+          {/* Search Input for User List */}
+          <div className="mt-4">
+            <Input 
+              type="text"
+              placeholder="Search users (name, email, WhatsApp)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-1/2 md:w-1/3"
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -1341,46 +1472,75 @@ const ManageUsersPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-gray-50/50 border-b last:border-b-0" data-state={isUserSelected(user.id) ? 'selected' : ''}>
-                    <TableCell className="px-4 py-3">
-                      <Checkbox
-                        checked={isUserSelected(user.id)}
-                        onCheckedChange={(checked) => handleSelectUser(user.id, checked)}
-                        aria-label={`Select user ${user.name}`}
-                      />
-                    </TableCell>
-                    <TableCell className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{user.name}</TableCell>
-                    <TableCell className="px-4 py-3 text-gray-600">{user.whatsappNumber}</TableCell>
-                    <TableCell className="px-4 py-3 text-gray-600">{user.email || 'N/A'}</TableCell>
-                    <TableCell className="text-right px-4 py-3">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => openEditUserDialog(user.id)} className="cursor-pointer">
-                                    <Edit3 className="mr-2 h-4 w-4"/>
-                                    Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:!text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
-                                    <Trash2 className="mr-2 h-4 w-4"/>
-                                    Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+                users
+                  .filter(user => {
+                    if (!searchTerm) return true; // Show all if search term is empty
+                    const term = searchTerm.toLowerCase();
+                    return (
+                      user.name.toLowerCase().includes(term) ||
+                      (user.email && user.email.toLowerCase().includes(term)) ||
+                      user.whatsappNumber.toLowerCase().includes(term)
+                    );
+                  })
+                  .map((user) => (
+                    <TableRow key={user.id} className="hover:bg-gray-50/50 border-b last:border-b-0" data-state={isUserSelected(user.id) ? 'selected' : ''}>
+                      <TableCell className="px-4 py-3">
+                        <Checkbox
+                          checked={isUserSelected(user.id)}
+                          onCheckedChange={(checked) => handleSelectUser(user.id, checked)}
+                          aria-label={`Select user ${user.name}`}
+                        />
+                      </TableCell>
+                      <TableCell className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{user.name}</TableCell>
+                      <TableCell className="px-4 py-3 text-gray-600">{user.whatsappNumber}</TableCell>
+                      <TableCell className="px-4 py-3 text-gray-600">{user.email || 'N/A'}</TableCell>
+                      <TableCell className="text-right px-4 py-3">
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700">
+                                      <span className="sr-only">Open menu</span>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuItem onClick={() => openEditUserDialog(user.id)} className="cursor-pointer">
+                                      <Edit3 className="mr-2 h-4 w-4"/>
+                                      Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:!text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
+                                      <Trash2 className="mr-2 h-4 w-4"/>
+                                      Delete
+                                  </DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
               )}
             </TableBody>
             {users.length > 0 && (
               <TableCaption className="py-3 text-sm text-gray-500">
-                Showing {users.length} of {users.length} users. {selectedUserIds.size} selected.
+                Showing {users.filter(user => {
+                    if (!searchTerm) return true;
+                    const term = searchTerm.toLowerCase();
+                    return (
+                      user.name.toLowerCase().includes(term) ||
+                      (user.email && user.email.toLowerCase().includes(term)) ||
+                      user.whatsappNumber.toLowerCase().includes(term)
+                    );
+                  }).length} of {users.length} users. {selectedUserIds.size} selected.
+                 {/* Conditional message if search yields no results but users exist */}
+                 {searchTerm && users.filter(user => {
+                    const term = searchTerm.toLowerCase();
+                    return (
+                      user.name.toLowerCase().includes(term) ||
+                      (user.email && user.email.toLowerCase().includes(term)) ||
+                      user.whatsappNumber.toLowerCase().includes(term)
+                    );
+                  }).length === 0 && (
+                    <span className="block text-center text-orange-600 py-2">No users match your search "{searchTerm}".</span>
+                  )}
               </TableCaption>
             )}
           </Table>
