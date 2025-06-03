@@ -115,10 +115,13 @@ const ManageUsersPage: React.FC = () => {
   // State for custom template fields
   const [customFields, setCustomFields] = useState({
     join_link: '',
-    morning_quote: '',
+    morning_quote: '', 
     daily_habit_heading: '',
     daily_habit_sub_heading: '',
     daily_habit_text: '',
+    day_number: '', 
+    what_next: '', 
+    custom_message_text: '', // New field
   });
 
   // State for Send Email Dialog
@@ -244,6 +247,9 @@ const ManageUsersPage: React.FC = () => {
     { value: '{{daily_habit_heading}}', label: 'Habit Heading' },
     { value: '{{daily_habit_sub_heading}}', label: 'Habit Sub-Heading' },
     { value: '{{daily_habit_text}}', label: 'Habit Text' },
+    { value: '{{day_number}}', label: 'Day Number' },
+    { value: '{{what_next}}', label: 'What\'s Next' },
+    { value: '{{custom_message_text}}', label: 'Custom Message' }, // New placeholder
   ];
 
   const handleCustomFieldChange = (fieldName: keyof typeof customFields, value: string) => {
@@ -708,6 +714,9 @@ const ManageUsersPage: React.FC = () => {
       daily_habit_heading: customFields.daily_habit_heading || '[Habit Heading]',
       daily_habit_sub_heading: customFields.daily_habit_sub_heading || '[Habit Sub-Heading]',
       daily_habit_text: customFields.daily_habit_text || '[Habit Text]',
+      day_number: customFields.day_number || '[Day #]',
+      what_next: customFields.what_next || '[Details about what\'s next]',
+      custom_message_text: customFields.custom_message_text || '[Your custom message here]',
     };
 
     for (const key in samplePlaceholders) {
@@ -782,6 +791,9 @@ const ManageUsersPage: React.FC = () => {
           daily_habit_heading: customFields.daily_habit_heading,
           daily_habit_sub_heading: customFields.daily_habit_sub_heading,
           daily_habit_text: customFields.daily_habit_text,
+          day_number: customFields.day_number,
+          what_next: customFields.what_next,
+          custom_message_text: customFields.custom_message_text,
         },
       };
     }).filter(p => p !== null) as any[];
@@ -1086,17 +1098,6 @@ const ManageUsersPage: React.FC = () => {
             />
           </div>
           <div className="md:col-span-2">
-            <Label htmlFor="morning_quote" className="text-sm font-medium text-gray-700">Morning Quote</Label>
-            <Textarea 
-              id="morning_quote" 
-              value={customFields.morning_quote} 
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('morning_quote', e.target.value)} 
-              placeholder="Enter your morning quote here..."
-              className="mt-1"
-              rows={3}
-            />
-          </div>
-          <div className="md:col-span-2">
             <Label htmlFor="daily_habit_text" className="text-sm font-medium text-gray-700">Daily Habit Text</Label>
             <Textarea 
               id="daily_habit_text" 
@@ -1104,7 +1105,50 @@ const ManageUsersPage: React.FC = () => {
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('daily_habit_text', e.target.value)} 
               placeholder="Describe the daily habit..."
               className="mt-1"
+              rows={4} 
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="morning_quote" className="text-sm font-medium text-gray-700">Morning Quote</Label>
+            <Textarea 
+              id="morning_quote" 
+              value={customFields.morning_quote} 
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('morning_quote', e.target.value)} 
+              placeholder="Enter your morning quote here..."
+              className="mt-1"
               rows={4}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="day_number" className="text-sm font-medium text-gray-700">Day Number</Label>
+            <Input 
+              id="day_number" 
+              value={customFields.day_number} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCustomFieldChange('day_number', e.target.value)} 
+              placeholder="e.g., 1, 2, Three"
+              className="mt-1"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="what_next" className="text-sm font-medium text-gray-700">What's Next (Text)</Label>
+            <Textarea 
+              id="what_next" 
+              value={customFields.what_next} 
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('what_next', e.target.value)} 
+              placeholder="Describe what users should expect next..."
+              className="mt-1"
+              rows={3}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="custom_message_text" className="text-sm font-medium text-gray-700">Custom Message Text (for custom_message_text)</Label>
+            <Textarea 
+              id="custom_message_text" 
+              value={customFields.custom_message_text} 
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleCustomFieldChange('custom_message_text', e.target.value)} 
+              placeholder="Enter your custom message for the template..."
+              className="mt-1"
+              rows={3}
             />
           </div>
         </CardContent>
