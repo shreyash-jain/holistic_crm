@@ -3,6 +3,7 @@ export interface EmailTemplate {
   name: string; // For display in the dropdown
   subject: string; // Pre-fills the email subject
   content: string; // The full HTML content of the email
+  
 }
 
 export const emailTemplatesList: EmailTemplate[] = [
