@@ -211,7 +211,7 @@ export const emailTemplatesList: EmailTemplate[] = [
             <p class="mb-6 text-center text-gray-600">
                 {{custom_message_text}}
                 <br><br>
-                For example: If you missed the morning session, you can still practice in the evening with this link below.
+                If you missed the morning session, you can still practice in the evening with this link below.
             </p>
 
             <h2 class="text-xl font-semibold text-gray-800 mb-4 section-title">Today's Practice Session:</h2>
