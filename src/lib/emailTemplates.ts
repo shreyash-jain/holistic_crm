@@ -222,7 +222,7 @@ export const emailTemplatesList: EmailTemplate[] = [
             </p>
 
             <p class="mb-6 text-center text-gray-600">
-                P.S. See you tomorrow for a full body flow session!
+                {{what_next}}
             </p>
 
             <h2 class="text-xl font-semibold text-gray-800 mb-4 section-title">Stay Connected:</h2>
